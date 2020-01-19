@@ -2,15 +2,13 @@
 # http://lusob.com
 # Released under a "Simplified BSD" license
 
-import time, sys, copy
+import copy
 import numpy as np
 from random import Random
 
 # Game
 BOARDWIDTH = 10
 BOARDHEIGHT = 20
-MOVESIDEWAYSFREQ = 0.15
-MOVEDOWNFREQ = 0.1
 
 # Render
 BOXSIZE = 20
@@ -209,12 +207,15 @@ class GameState:
         for x in range(BOARDWIDTH):
             for y in range(BOARDHEIGHT):
                 board[x][y] = (0 if board[x][y] == BLANK else 1)
+
         if self.fallingPiece is not None:
-            piece_pose = self.fallingPiece['x'] + 1, self.fallingPiece['y']+1, PIECE_TO_ID[self.fallingPiece['shape']], self.fallingPiece[
-                'rotation'] + 1
-        else:
-            return 0, 0, 0, 0
-        return board, piece_pose
+            shiftx, shifty = self.fallingPiece['x'], self.fallingPiece['y']
+            for x in range(TEMPLATEWIDTH):
+                for y in range(TEMPLATEHEIGHT):
+                    shapeToDraw = PIECES[self.fallingPiece['shape']][self.fallingPiece['rotation']]
+                    if shapeToDraw[y][x] != BLANK:
+                        board[shiftx + x][shifty + y] = 2
+        return board
 
     def frame_step(self, input):
         self.movingLeft = False
@@ -227,8 +228,7 @@ class GameState:
         if self.fallingPiece == None:
             # No falling piece in play, so start a new piece at the top
             self.fallingPiece = self.nextPiece
-            self.nextPiece = self.getNewPiece()
-            self.lastFallTime = time.time()  # reset self.lastFallTime
+            self.nextPiece = self.getNewPiece()# reset self.lastFallTime
 
             if not self.isValidPosition():
                 terminal = True
@@ -241,13 +241,11 @@ class GameState:
             self.fallingPiece['x'] -= 1
             self.movingLeft = True
             self.movingRight = False
-            self.lastMoveSidewaysTime = time.time()
 
         elif (input[3] == 1) and self.isValidPosition(adjX=1):
             self.fallingPiece['x'] += 1
             self.movingRight = True
             self.movingLeft = False
-            self.lastMoveSidewaysTime = time.time()
 
         # rotating the piece (if there is room to rotate)
         elif (input[2] == 1):
@@ -280,15 +278,13 @@ class GameState:
                 self.fallingPiece['x'] -= 1
             elif self.movingRight and self.isValidPosition(adjX=1):
                 self.fallingPiece['x'] += 1
-            self.lastMoveSidewaysTime = time.time()
 
         if self.movingDown:
             self.fallingPiece['y'] += 1
-            self.lastMoveDownTime = time.time()
 
-        # let the piece fall if it is time to fall
         # see if the piece has landed
         cleared = 0
+        score = self.score
         if not self.isValidPosition(adjY=1):
             # falling piece has landed, set it on the self.board
             self.addToBoard()
@@ -304,12 +300,12 @@ class GameState:
                 elif cleared == 4:
                     self.score += 1200 * self.level
 
-            self.score += self.fallingPiece['y']
+            #self.score += self.fallingPiece['y']
 
             self.lines += cleared
             self.total_lines += cleared
 
-            reward = self.height - self.getHeight()
+            height_delta = self.height - self.getHeight()
             self.height = self.getHeight()
 
             self.level, self.fallFreq = self.calculateLevelAndFallFreq()
@@ -318,9 +314,11 @@ class GameState:
         else:
             # piece did not land, just move the piece down
             self.fallingPiece['y'] += 1
+            height_delta = 0
 
-        if cleared > 0:
-            reward = 100 * cleared
+        #if cleared > 0:
+        #    reward = 100 * cleared
+        reward = self.score - score
 
         return self.get_observation(), reward, terminal
 

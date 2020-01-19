@@ -12,8 +12,7 @@ class TetrisEnv(gym.Env):
         self.game_state = game.GameState()
         self._action_set = self.game_state.getActionSet()
         self.action_space = spaces.Discrete(len(self._action_set))
-        self.observation_space = spaces.Tuple((spaces.Box(low=0, high=1, shape=(game.BOARDWIDTH, game.BOARDHEIGHT)),
-                                               spaces.MultiDiscrete((game.BOARDWIDTH + 1, game.BOARDHEIGHT + 1, ))))
+        self.observation_space = spaces.Box(low=0, high=2, shape=(game.BOARDWIDTH, game.BOARDHEIGHT), dtype=np.int)
         self.viewer = None
 
     def seed(self, seed=None):
