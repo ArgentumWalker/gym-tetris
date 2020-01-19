@@ -1,9 +1,7 @@
 import numpy as np
 import gym
 from gym import spaces
-import tetris_engine as game
-
-SCREEN_WIDTH, SCREEN_HEIGHT = 640,480
+import gym_tetris.tetris_engine as game
 
 
 class TetrisEnv(gym.Env):
@@ -14,11 +12,14 @@ class TetrisEnv(gym.Env):
         self.game_state = game.GameState()
         self._action_set = self.game_state.getActionSet()
         self.action_space = spaces.Discrete(len(self._action_set))
-        self.observation_space = spaces.Box(low=0, high=255, shape=(SCREEN_HEIGHT, SCREEN_WIDTH, 3))
+        self.observation_space = spaces.Tuple((spaces.Box(low=0, high=1, shape=(game.BOARDWIDTH, game.BOARDHEIGHT)),
+                                               spaces.MultiDiscrete((game.BOARDWIDTH + 1, game.BOARDHEIGHT + 1, ))))
         self.viewer = None
 
+    def seed(self, seed=None):
+        self.game_state.seed(seed)
 
-    def _step(self, a):
+    def step(self, a):
         self._action_set = np.zeros([len(self._action_set)])
         self._action_set[a] = 1
         reward = 0.0
@@ -33,14 +34,13 @@ class TetrisEnv(gym.Env):
         return len(self._action_set)
 
     # return: (states, observations)
-    def _reset(self):
+    def reset(self):
         do_nothing = np.zeros(len(self._action_set))
         do_nothing[0] = 1
-        self.observation_space = spaces.Box(low=0, high=255, shape=(SCREEN_HEIGHT, SCREEN_WIDTH, 3))
         state, _, _= self.game_state.frame_step(do_nothing)
         return state
 
-    def _render(self, mode='human', close=False):
+    def render(self, mode='human', close=False):
         if close:
             if self.viewer is not None:
                 self.viewer.close()
