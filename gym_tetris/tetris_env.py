@@ -34,10 +34,8 @@ class TetrisEnv(gym.Env):
 
     # return: (states, observations)
     def reset(self):
-        do_nothing = np.zeros(len(self._action_set))
-        do_nothing[0] = 1
-        state, _, _= self.game_state.frame_step(do_nothing)
-        return state
+        self.game_state.reinit()
+        return self.game_state.get_observation()
 
     def render(self, mode='human', close=False):
         if close:

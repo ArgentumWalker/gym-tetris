@@ -208,7 +208,7 @@ class GameState:
             for y in range(BOARDHEIGHT):
                 board[x][y] = (0 if board[x][y] == BLANK else 1)
 
-        if self.fallingPiece is not None:
+        if self.fallingPiece is not None and self.isValidPosition():
             shiftx, shifty = self.fallingPiece['x'], self.fallingPiece['y']
             for x in range(TEMPLATEWIDTH):
                 for y in range(TEMPLATEHEIGHT):
@@ -232,30 +232,24 @@ class GameState:
 
             if not self.isValidPosition():
                 terminal = True
-
-                self.reinit()
                 return self.get_observation(), reward, terminal  # can't fit a new piece on the self.board, so game over
 
         # moving the piece sideways
-        if (input[1] == 1) and self.isValidPosition(adjX=-1):
+        if input[1] == 1 and self.isValidPosition(adjX=-1):
             self.fallingPiece['x'] -= 1
-            self.movingLeft = True
-            self.movingRight = False
 
-        elif (input[3] == 1) and self.isValidPosition(adjX=1):
+        if input[3] == 1 and self.isValidPosition(adjX=1):
             self.fallingPiece['x'] += 1
-            self.movingRight = True
-            self.movingLeft = False
 
         # rotating the piece (if there is room to rotate)
-        elif (input[2] == 1):
+        if input[2] == 1:
             self.fallingPiece['rotation'] = (self.fallingPiece['rotation'] + 1) % len(
                 PIECES[self.fallingPiece['shape']])
             if not self.isValidPosition():
                 self.fallingPiece['rotation'] = (self.fallingPiece['rotation'] - 1) % len(
                     PIECES[self.fallingPiece['shape']])
 
-        elif (input[5] == 1):  # rotate the other direction
+        if input[5] == 1:  # rotate the other direction
             self.fallingPiece['rotation'] = (self.fallingPiece['rotation'] - 1) % len(
                 PIECES[self.fallingPiece['shape']])
             if not self.isValidPosition():
@@ -263,24 +257,11 @@ class GameState:
                     PIECES[self.fallingPiece['shape']])
 
         # move the current piece all the way down
-        elif (input[4] == 1):
-            self.movingDown = False
-            self.movingLeft = False
-            self.movingRight = False
+        if input[4] == 1:
             for i in range(1, BOARDHEIGHT):
                 if not self.isValidPosition(adjY=i):
                     break
             self.fallingPiece['y'] += i - 1
-
-        # handle moving the piece because of user input
-        if (self.movingLeft or self.movingRight):
-            if self.movingLeft and self.isValidPosition(adjX=-1):
-                self.fallingPiece['x'] -= 1
-            elif self.movingRight and self.isValidPosition(adjX=1):
-                self.fallingPiece['x'] += 1
-
-        if self.movingDown:
-            self.fallingPiece['y'] += 1
 
         # see if the piece has landed
         cleared = 0
@@ -300,7 +281,7 @@ class GameState:
                 elif cleared == 4:
                     self.score += 1200 * self.level
 
-            #self.score += self.fallingPiece['y']
+            self.score += self.fallingPiece['y']
 
             self.lines += cleared
             self.total_lines += cleared
